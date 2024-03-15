@@ -96,3 +96,32 @@ class InstaVariety(Dataset2D):
     @property
     def __name__(self, ):
         return 'InstaVariety'
+    
+
+class EMDB(Dataset3D):
+    def __init__(self, cfg, dset='train'):
+        parsed_data_path = os.path.join(_C.PATHS.PARSED_DATA, f'emdb_{dset}_backbone.pth')
+        parsed_data_path = parsed_data_path.replace('backbone', cfg.MODEL.BACKBONE.lower())
+        super(EMDB, self).__init__(cfg, parsed_data_path, dset=='train')
+
+        # emdb는 3d joint 정보를 따로 저장해야 한다. 어디에 코드가 있었는지는 나중에 찾으면 적기
+        self.has_3d = True
+        self.has_smpl = True
+        ###
+        # 이 데이터셋 사용 전에 get_labels()함수가 젤 먼저 호출되어야함
+        #get_inputs() 함수는 override 필요, bbox, kp2d, (mask) , features 반환
+        #get_ground_truth() 함수는 override 필요, joints
+        
+
+
+        # Among 31 joints format, 14 common joints are avaialable
+        self.mask = torch.zeros(_C.KEYPOINTS.NUM_JOINTS + 14)
+        self.mask[-14:] = 1
+
+    @property
+    def __name__(self, ):
+        return 'EMDB'
+    
+    def compute_3d_keypoints(self, index):
+        return convert_kps(self.labels['joints3D'][index], 'spin', 'h36m'
+            )[:, _C.KEYPOINTS.H36M_TO_J14].float()
