@@ -64,7 +64,7 @@ class Dataset3D(BaseDataset):
         target = self.SMPLAugmentor(target)
     
         # 3D and 2D keypoints
-        if self.__name__ == 'ThreeDPW': # 3DPW has SMPL labels
+        if self.__name__ == 'ThreeDPW' or self.__name__ == 'EMDB': # 3DPW has SMPL labels
             gt_kp3d = self.labels['joints3D'][start_index:end_index+1].clone()
             gt_kp2d = self.labels['joints2D'][start_index+1:end_index+1, ..., :2].clone()
             gt_kp3d = root_centering(gt_kp3d.clone())
@@ -123,8 +123,12 @@ class Dataset3D(BaseDataset):
             yup2ydown = transforms.axis_angle_to_matrix(torch.tensor([[np.pi, 0, 0]])).float()
             yup2ydown = torch.matmul(yaw, yup2ydown)
             R = torch.matmul(R, yup2ydown)
+
+        elif self.__name__ == 'EMDB':
+            target['cam_intrinsics'] = self.labels['cam_instrincs'][start_index:end_index+1, :3, :3].clone()
+            R = self.labels['cam_poses'][start_index:end_index+1, :3, :3].clone().float()
             
-        # target['R'] = R
+        target['R'] = R
         # if self.__name__ == 'ThreeDPW':
         #     target['R'] = torch.zeros_like(target['R']) # No camera labels for 3DPW
         
@@ -147,12 +151,12 @@ class Dataset3D(BaseDataset):
                   'init_root': torch.zeros((1, 6)),
                   }
         
-        self.get_camera_info(index, target)
-        self.get_inputs(index, target)
-        self.get_labels(index, target)
-        self.get_init_frame(target)
+        self.get_camera_info(index, target)   # R, res, cam_intrinsics
+        self.get_inputs(index, target)      # kp2d, bbox, features
+        self.get_labels(index, target)      # pose, betas, kp3d, full_kp2d, weak_kp2d, contact
+        self.get_init_frame(target)        # init_kp3d
         
-        target = d_utils.prepare_keypoints_data(target)
-        target = d_utils.prepare_smpl_data(target)
+        target = d_utils.prepare_keypoints_data(target) # kp2d, init_kp2d, kp3d
+        target = d_utils.prepare_smpl_data(target)  # pose, betas, init_pose, cam
         
         return target
