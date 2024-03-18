@@ -18,7 +18,7 @@ DPVO_DIR = osp.join(ROOT_DIR, "third-party/DPVO")
 
 
 class SLAMModel(object):
-    def __init__(self, video, output_pth, width, height, calib=None, stride=1, skip=0, buffer=2048):
+    def __init__(self, video, output_pth, width, height, calib=None, stride=1, skip=0, buffer=2048, is_images=False):
         
         if calib == None or not osp.exists(calib): 
             calib = osp.join(output_pth, 'calib.txt')
@@ -32,7 +32,10 @@ class SLAMModel(object):
         self.times = []
         self.slam = None
         self.queue = Queue(maxsize=8)
-        self.reader = Process(target=video_stream, args=(self.queue, video, calib, stride, skip))
+        if is_images:
+            self.reader = Process(target=image_stream, args=(self.queue, video, calib, stride, skip))
+        else:
+            self.reader = Process(target=video_stream, args=(self.queue, video, calib, stride, skip))
         self.reader.start()
         
     def estimate_intrinsics(self, width, height, calib):

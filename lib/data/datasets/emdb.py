@@ -22,6 +22,7 @@ class EMDBDataset:
                 image = cv2.imread(image_path)
                 images.append(image)
         self.images = images
+        self.fps = 30
         pass
 
     def get_kp2d_feature(self):
@@ -33,8 +34,8 @@ class EMDBDataset:
         
         # Run detection model on each image
         # EMBD dataset's cropped images' fps is 30
-        detector.track(images, fps=30, length=len(images))
-        tracking_results = detector.process(fps=30)
+        detector.track(images, fps=self.fps, length=len(images))
+        tracking_results = detector.process(fps=self.fps)
         tracking_results = extractor.run(video=images, tracking_results=tracking_results)
 
         return tracking_results['kp2d'] ,tracking_results['features']
@@ -42,15 +43,18 @@ class EMDBDataset:
             
     def get_gt_kp2d(self):
         # Retrieve kp2d data here
+        return self.labels["kp2d"]
         pass
 
     def get_R(self):
         # Retrieve R data here
+        R = self.labels['camera']["extrinsics"][:, :3, :3].clone()
+        return R
         pass
 
     def get_cam_angvel(self):
         # Retrieve cam_angvel data here
-        if run_global: slam = SLAMModel(video=self.images, output_pth, width, height, calib)
+        if run_global: slam = SLAMModel(video=self.images, is_images=True, output_pth='path/to/output', width=self.labels["camera"]['width'], height=self.labels["camera"]['height'])
         if slam is not None: 
             slam.track()
             slam_results = slam.process()
@@ -58,19 +62,23 @@ class EMDBDataset:
             slam_results = np.zeros((length, 7))
             slam_results[:, 3] = 1.0    # Unit quaternion
         # Process SLAM results
-        cam_angvel = convert_dpvo_to_cam_angvel(self.slam_results, self.fps)
+        cam_angvel = convert_dpvo_to_cam_angvel(slam_results, fps=self.fps)
         return cam_angvel
 
     def get_cam_poses(self):
         # Retrieve cam_poses data here
+        return self.labels['camera']["extrinsics"]
         pass
 
     def get_res(self):
         # Retrieve res data here
+        return (self.labels['camera']['width'], self.labels['camera']['height'])
         pass
 
     def get_bbox(self):
         # Retrieve bbox data here
+        # bboxes format of embd((x_min, y_min, x_max, y_max)) should be changed to (center_x, center_y, scale/200) with square box
+        
         pass
 
     def get_init_pose(self):
