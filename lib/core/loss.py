@@ -91,7 +91,8 @@ class WHAMLoss(nn.Module):
         gt_vel_root = gt['vel_root']
         gt_pose_root = gt['pose_root'][:, 1:]
         gt_cam_angvel = gt['cam_angvel']
-        gt_cam_r = transforms.matrix_to_rotation_6d(gt['R'][:, 1:])
+        #gt_cam_r = transforms.matrix_to_rotation_6d(gt['R'][:, 1:])
+        gt_cam_r = transforms.matrix_to_rotation_6d(gt['R'])
         bbox = gt['bbox']
         # =======>
         
@@ -211,7 +212,7 @@ class WHAMLoss(nn.Module):
         loss_dict = {
             'pose': loss_regr_pose * self.loss_weight,
             'betas': loss_regr_betas * self.loss_weight,
-            '2d': loss_keypoints * self.loss_weight,
+            #'2d': loss_keypoints * self.loss_weight,
             '3d': loss_keypoints_3d_smpl * self.loss_weight,
             '3d_nn': loss_keypoints_3d_nn * self.loss_weight,
             'casc': loss_cascaded * self.loss_weight,
@@ -269,7 +270,7 @@ def contact_loss(
         gt_stationary,
         criterion,
 ):
-    
+    #print("pred_stationary", pred_stationary.shape, gt_stationary.shape)
     mask = gt_stationary != -1
     if mask.any():
         loss = criterion(pred_stationary, gt_stationary)[mask].mean()
@@ -291,6 +292,7 @@ def full_projected_keypoint_loss(
     conf = gt_keypoints_2d[..., -1]
     
     if (conf > 0).any():
+        #("pred_keypoints_2d", pred_keypoints_2d.shape, gt_keypoints_2d.shape)
         loss = torch.mean(
             weight * (conf * torch.norm(pred_keypoints_2d - gt_keypoints_2d[..., :2], dim=-1)
         ) / scale, dim=1).mean() * conf.mean()

@@ -1,6 +1,6 @@
 LOGDIR: ''
 DEVICE: 'cuda'
-EXP_NAME: 'train_stage1'
+EXP_NAME: 'train_stage1_testing'
 OUTPUT_DIR: 'experiments/'
 NUM_WORKERS: 8
 MODEL_CONFIG: 'configs/yamls/model_base.yaml'
@@ -9,10 +9,10 @@ SEED_VALUE: 42
 
 TRAIN:
   LR: 5e-4
-  BATCH_SIZE: 64
-  END_EPOCH: 100
+  BATCH_SIZE: 8
+  END_EPOCH: 20
   STAGE: 'stage1'
-  CHECKPOINT: ''
+  CHECKPOINT: 'experiments/train_stage1_testing/checkpoint.pth.tar'
   MILESTONES: [60, 80]
 
 LOSS:

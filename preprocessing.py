@@ -13,7 +13,7 @@ try:
     run_global = True
 except: 
     # logger.info('DPVO is not properly installed. Only estimate in local coordinates !')
-    print("No Slam available?????????????")
+    #print("No Slam available?????????????")
     run_global = False
 
 cfg = get_cfg_defaults()
@@ -79,7 +79,7 @@ class EMDBDataset(BaseDataset):
                 slam_results[:, 3] = 1.0    # Unit quaternion
             joblib.dump(slam_results, os.path.join(output_pth, 'slam_results.pth'))
         
-        print("do kp2d features slam done")
+        #print("do kp2d features slam done")
         
         return
 

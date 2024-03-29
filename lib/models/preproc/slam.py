@@ -68,6 +68,8 @@ class SLAMModel(object):
     def process(self, ):
         for _ in range(12):
             self.slam.update()
-        
+            #print("slam updating")
+        #print("slam update done")
         self.reader.join()
+        #print("slam join done")
         return self.slam.terminate()[0]

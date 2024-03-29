@@ -5,6 +5,7 @@ from __future__ import division
 import torch
 
 from .datasets import EvalDataset, DataFactory
+from .datasets.emdb2 import EMDBDataset
 from ..utils.data_utils import make_collate_fn
 
 
@@ -28,6 +29,9 @@ def setup_train_dataloader(cfg, ):
     n_workers = 0 if cfg.DEBUG else cfg.NUM_WORKERS
     
     train_dataset = DataFactory(cfg, cfg.TRAIN.STAGE)
+    #emdb = EMDBDataset(cfg)
+    #train_dataset = emdb.get_single_sequence(0)
+    print("train_dataset_length", len(train_dataset))
     dloader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=cfg.TRAIN.BATCH_SIZE,
@@ -36,6 +40,15 @@ def setup_train_dataloader(cfg, ):
         pin_memory=True,
         collate_fn=make_collate_fn()
     )
+    # train_dataset = EMDBDataset(cfg)
+    # dloader = torch.utils.data.DataLoader(
+    #     train_dataset,
+    #     batch_size=cfg.TRAIN.BATCH_SIZE,
+    #     num_workers=n_workers,
+    #     shuffle=True,
+    #     pin_memory=True,
+    #     collate_fn=make_collate_fn()
+    # )
     return dloader
 
 

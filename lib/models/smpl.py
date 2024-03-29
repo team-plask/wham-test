@@ -112,6 +112,19 @@ class SMPL(_SMPL):
 
     def get_output(self, *args, **kwargs):
         kwargs['get_skin'] = True
+    
+        # for i, arg in enumerate(args):
+        #     if hasattr(arg, 'shape'):
+        #         print(f"Shape of args[{i}]: {arg.shape}")
+        #     else:
+        #         print(f"args[{i}] does not have a shape attribute")
+
+        # # Print the shapes of all keyword arguments in kwargs
+        # for key, value in kwargs.items():
+        #     if hasattr(value, 'shape'):
+        #         print(f"Shape of kwargs['{key}']: {value.shape}")
+        #     else:
+        #         print(f"kwargs['{key}'] does not have a shape attribute")
         smpl_output = super(SMPL, self).forward(*args, **kwargs)
         joints = vertices2joints(self.J_regressor_wham, smpl_output.vertices)
         feet = vertices2joints(self.J_regressor_feet, smpl_output.vertices)
@@ -230,7 +243,10 @@ def convert_pare_to_full_img_cam(
 
     s, tx, ty = pare_cam[..., 0], pare_cam[..., 1], pare_cam[..., 2]
     res = crop_res
+    
     r = bbox_height / res
+    # print("rres", r*res)
+    # temp = (r * res * s)
     tz = 2 * focal_length / (r * res * s)
 
     cx = 2 * (bbox_center[..., 0] - (img_w / 2.)) / (s * bbox_height)

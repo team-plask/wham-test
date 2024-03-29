@@ -15,6 +15,7 @@ class Normalizer:
         return out_kp_2d, bbox
         
     def bbox_normalization(self, kp_2d, bbox, res, patch_width, patch_height):
+        #print("kp_2d: ", kp_2d.shape, "bbox: ", bbox.shape, "res: ", res, "patch_width: ", patch_width, "patch_height: ", patch_height)
         to_torch = False
         if isinstance(kp_2d, torch.Tensor):
             to_torch = True
@@ -33,7 +34,6 @@ class Normalizer:
         centers = normalize_keypoints_to_image(bbox[:, :2].unsqueeze(1), res).squeeze(1)
         scale = bbox[:, 2:] * 200 / res.max()
         location = torch.cat((centers, scale), dim=-1)
-        
         out_kp_2d = out_kp_2d.reshape(out_kp_2d.shape[0], -1)
         out_kp_2d = torch.cat((out_kp_2d, location), dim=-1)
         return out_kp_2d

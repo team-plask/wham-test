@@ -6,6 +6,7 @@ import torch
 import numpy as np
 
 from .amass import AMASSDataset
+from .emdb2 import EMDBDataset
 from .videos import Human36M, ThreeDPW, MPII3D, InstaVariety
 from lib.utils.data_utils import make_collate_fn
 
@@ -15,8 +16,10 @@ class DataFactory(torch.utils.data.Dataset):
         super(DataFactory, self).__init__()
         
         if train_stage == 'stage1':
-            self.datasets = [AMASSDataset(cfg)]
-            self.dataset_names = ['AMASS']
+            #self.datasets = [AMASSDataset(cfg)]
+            #self.dataset_names = ['AMASS']
+            self.datasets = [EMDBDataset(cfg)]
+            self.dataset_names = ['EMDB']
         elif train_stage == 'stage2':
             self.datasets = [
                 AMASSDataset(cfg), ThreeDPW(cfg), 
@@ -26,6 +29,7 @@ class DataFactory(torch.utils.data.Dataset):
 
         self._set_partition(cfg.DATASET.RATIO)
         self.lengths = [len(ds) for ds in self.datasets]
+        # print(self.lengths, "hereis lenght---------------------")
 
     @property
     def __name__(self, ):

@@ -28,9 +28,9 @@ class FeatureExtractor(object):
         ckpt = osp.join(ROOT_DIR, 'checkpoints', 'hmr2a.ckpt')
         self.model = hmr2(ckpt).to(device).eval()
     
-    def run(self, video, tracking_results, patch_h=256, patch_w=256):
+    def run(self, video, tracking_results, patch_h=256, patch_w=256, is_video=True):
         
-        if osp.isfile(video):
+        if is_video and osp.isfile(video):
             cap = cv2.VideoCapture(video)
             is_video = True
             length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))

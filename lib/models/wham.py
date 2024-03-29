@@ -106,7 +106,7 @@ class Network(nn.Module):
     
     def preprocess(self, x, mask):
         self.b, self.f = x.shape[:2]
-        
+        return x
         # Treat masked keypoints
         mask_embedding = mask.unsqueeze(-1) * self.mask_embedding
         _mask = mask.unsqueeze(-1).repeat(1, 1, 1, 2).reshape(self.b, self.f, -1)
@@ -152,6 +152,8 @@ class Network(nn.Module):
             motion_context = self.integrator(motion_context, img_features)
             
         # Stage 4. Decode SMPL motion
+            #sujin
+        #print("motion_context, init_smpl",motion_context.shape, init_smpl.shape)
         pred_pose, pred_shape, pred_cam, pred_contact = self.motion_decoder(motion_context, init_smpl)
         # --------- #
         

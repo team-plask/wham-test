@@ -56,7 +56,6 @@ class Trainer():
                  ):
         
         self.train_loader, self.valid_loader = data_loaders
-        
         # Model and optimizer
         self.network = network
         self.optimizer = optimizer
@@ -100,7 +99,6 @@ class Trainer():
         
     def train(self, ):
         # Single epoch training routine
-
         losses = AverageMeter()
         kp_2d_loss = AverageMeter()
         kp_3d_loss = AverageMeter()
@@ -115,10 +113,9 @@ class Trainer():
         self.network.train()
         start = time.time()
         summary_string = ''
-        
         bar = Bar(f'Epoch {self.epoch + 1}/{self.end_epoch}', fill='#', max=len(self.train_loader))
         for i, batch in enumerate(self.train_loader):
-            
+            #print(i, "---", batch.keys())
             # <======= Feedforward 
             x, inits, features, kwargs, gt = prepare_batch(batch, self.device, self.train_stage=='stage2')
             timer['data'] = time.time() - start
@@ -143,16 +140,18 @@ class Trainer():
             # <======= Log training info
             total_loss = loss
             losses.update(total_loss.item(), x.size(0))
-            kp_2d_loss.update(loss_dict['2d'].item(), x.size(0))
+            #kp_2d_loss.update(loss_dict['2d'].item(), x.size(0))
             kp_3d_loss.update(loss_dict['3d'].item(), x.size(0))
             
             timer['backward'] = time.time() - start
             timer['batch'] = timer['data'] + timer['forward'] + timer['loss'] + timer['backward']
             start = time.time()
 
+            # summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
+            #                 f'| loss: {losses.avg:.2f} | 2d: {kp_2d_loss.avg:.2f} ' \
+            #                 f'| 3d: {kp_3d_loss.avg:.2f} '
             summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
-                            f'| loss: {losses.avg:.2f} | 2d: {kp_2d_loss.avg:.2f} ' \
-                            f'| 3d: {kp_3d_loss.avg:.2f} '
+                            f'| loss: {losses.avg:.2f} | 3d: {kp_3d_loss.avg:.2f} '
 
             for k, v in loss_dict.items():
                 if k in self.summary_loss_keys: 

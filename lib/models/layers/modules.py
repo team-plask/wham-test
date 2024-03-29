@@ -24,6 +24,8 @@ class Regressor(nn.Module):
             nn.init.xavier_uniform_(getattr(self, 'declayer%d'%i).weight, gain=0.01)
 
     def forward(self, x, inits, h0):
+        #sujin
+        #print(x.shape)
         xc = torch.cat([x, *inits], dim=-1)
         xc, h0 = self.rnn(xc, h0)
 
@@ -52,7 +54,6 @@ class NeuralInitialization(nn.Module):
 
     def forward(self, x):
         b = x.shape[0]
-
         out = self.linear3(self.relu2(self.linear2(self.relu1(self.linear1(x)))))
         out = out.view(b, self.num_inits, self.n_layers, -1).permute(1, 2, 0, 3).contiguous()
 
@@ -168,6 +169,7 @@ class TrajectoryDecoder(nn.Module):
             pred_root_list.append(pred_rootr)
             pred_vel_list.append(pred_rootv)
         
+        print("pred_root_list: ", pred_root_list)
         pred_root = torch.cat(pred_root_list, dim=1).view(b, f + 1, -1)
         pred_vel = torch.cat(pred_vel_list, dim=1).view(b, f, -1)
         
