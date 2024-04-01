@@ -9,10 +9,10 @@ SEED_VALUE: 42
 
 TRAIN:
   LR: 5e-4
-  BATCH_SIZE: 8
+  BATCH_SIZE: 16
   END_EPOCH: 20
   STAGE: 'stage1'
-  CHECKPOINT: 'experiments/train_stage1_testing/checkpoint.pth.tar'
+  CHECKPOINT: ''
   MILESTONES: [60, 80]
 
 LOSS:

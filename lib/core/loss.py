@@ -223,7 +223,8 @@ class WHAMLoss(nn.Module):
             'camera': loss_camera * self.loss_weight,
             'sliding_ref': loss_sliding_ref * self.loss_weight,
         }
-        
+        for loss_name, loss_value in loss_dict.items():
+            print(f"{loss_name}: {loss_value.item()}")
         loss = sum(loss for loss in loss_dict.values())
         
         return loss, loss_dict
@@ -237,7 +238,7 @@ def root_loss(
     stationary,
     criterion
 ):
-    
+
     mask_r = (gt_pose_root != 0.0).all(dim=-1).all(dim=-1)
     mask_v = (gt_vel_root != 0.0).all(dim=-1).all(dim=-1)
     mask_s = (stationary != -1).any(dim=1).any(dim=1)
@@ -261,7 +262,6 @@ def root_loss(
         loss_v = loss_v[mask_v].mean()
     else:
         loss_v = torch.FloatTensor(1).fill_(0.).to(gt_vel_root.device)[0]
-
     return loss_v, loss_r
 
 
@@ -292,7 +292,7 @@ def full_projected_keypoint_loss(
     conf = gt_keypoints_2d[..., -1]
     
     if (conf > 0).any():
-        #("pred_keypoints_2d", pred_keypoints_2d.shape, gt_keypoints_2d.shape)
+        #print("pred_keypoints_2d", pred_keypoints_2d, gt_keypoints_2d)
         loss = torch.mean(
             weight * (conf * torch.norm(pred_keypoints_2d - gt_keypoints_2d[..., :2], dim=-1)
         ) / scale, dim=1).mean() * conf.mean()

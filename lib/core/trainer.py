@@ -150,8 +150,8 @@ class Trainer():
             # summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
             #                 f'| loss: {losses.avg:.2f} | 2d: {kp_2d_loss.avg:.2f} ' \
             #                 f'| 3d: {kp_3d_loss.avg:.2f} '
-            summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
-                            f'| loss: {losses.avg:.2f} | 3d: {kp_3d_loss.avg:.2f} '
+            # summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
+            #                 f'| loss: {losses.avg:.2f} | 3d: {kp_3d_loss.avg:.2f} '
 
             for k, v in loss_dict.items():
                 if k in self.summary_loss_keys: 

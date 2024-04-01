@@ -223,6 +223,8 @@ def prepare_groundtruth(batch, device):
         if gt_key in batch.keys():
             dtype = torch.float32 if batch[gt_key].dtype == torch.float64 else batch[gt_key].dtype
             groundtruths[gt_key] = batch[gt_key].to(dtype=dtype, device=device)
+        else :
+            print(f'Key {gt_key} not found in batch')
     
     return groundtruths
 

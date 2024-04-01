@@ -82,20 +82,42 @@ def compute_contact_label(feet, thr=1e-2, alpha=5):
     label = 1 / (1 + torch.exp(alpha * (thr ** -1) * (vel - thr)))
     return label.clone()
 
-def perspective_projection(x3d, K, R=None, T=None):
-    x3d = x3d.float()
-    if R != None:
-        R = R.float()
-        x3d = torch.matmul(R, x3d.transpose(1, 2)).transpose(1, 2)
-    if T != None:
-        #print("x, T shape", x3d.shape, T.shape)
-        T = T.float()
-        x3d = x3d + T.unsqueeze(0).unsqueeze(0)
+def perspective_projection(kp3d, K, R, T):
+    """
+    3D 점들을 2D 이미지 평면으로 투영합니다.
+
+    :param kp3d: 3D 점들의 좌표, 크기는 [n_joints, 3]입니다.
+    :param K: 카메라의 내부 매개변수 행렬, 크기는 [3, 3]입니다.
+    :param R: 회전 행렬, 크기는 [3, 3]입니다.
+    :param T: 이동 벡터, 크기는 [3]입니다.
+    :return: 2D 투영된 점들의 좌표, 크기는 [n_joints, 2]입니다.
+    """
+    # T를 [3, 1]로 만듭니다.
+    T = T.view(3, 1).float()
+    R = R.float()
+    kp3d = kp3d.float()
     K = K.float()
-    x2d = torch.div(x3d, x3d[..., 2:])
-    x2d = torch.matmul(K, x2d.transpose(-1, -2)).transpose(-1, -2)[..., :2]
-    #print(x2d.shape)
-    return x2d
+    
+    
+    # 3D 점을 균질 좌표로 확장합니다.
+    ones = torch.ones(kp3d.shape[0], 1)
+    kp3d_homogeneous = torch.cat((kp3d, ones), dim=1)  # [n_joints, 4]
+    
+    # 카메라 외부 매개변수 (R, T)를 사용하여 3D 공간에서의 위치 변환을 수행합니다.
+    RT = torch.cat((R, T), dim=1)  # [3, 4]
+    kp3d_transformed = torch.matmul(kp3d_homogeneous, RT.T)  # [n_joints, 4]
+    print("transformed", kp3d_transformed.shape)
+    
+    # 내부 매개변수 K를 사용하여 2D 이미지 평면으로 투영합니다.
+    kp2d_homogeneous = torch.matmul(kp3d_transformed, K.T)  # [n_joints, 3]
+    print("kp2d_homogeneous", kp2d_homogeneous.shape)
+    
+    # 균질 좌표에서 일반 좌표로 변환합니다.
+    kp2d = kp2d_homogeneous[:, :2] / kp2d_homogeneous[:, 2].unsqueeze(1)  # [n_joints, 2]
+    print("kp2d", kp2d.shape)
+    
+    return kp2d.squeeze()
+
 
 def get_kp2d():
     #print(self.tracking_results[0]['keypoints'])
@@ -110,25 +132,23 @@ def get_features():
     return tracking_results[0]['features']
 
 def get_gt_kp2d():
-    kp3d = get_gt_kp3d()
+    kp3ds = get_gt_kp3d()[..., :3] #except confidence
     cam_intrinsic = torch.tensor(labels['camera']["intrinsics"]).clone()
     R = get_R()
     T = torch.tensor(labels['camera']["extrinsics"][:, :3, 3]).clone()
+    gt_kp2d = []
     for frame_index in range(n_frames):
-        x2d = perspective_projection(kp3d[frame_index].unsqueeze(0), cam_intrinsic)
-        x2d = x2d.unsqueeze(0)
-        try:
-            gt_kp2d = torch.cat((gt_kp2d, x2d), dim=0)
-        except:
-            gt_kp2d = x2d
+        x2d = perspective_projection(kp3ds[frame_index].squeeze(), cam_intrinsic, R[frame_index], T[frame_index])
+        gt_kp2d.append(x2d)
 
-    return gt_kp2d.clone()
+    return torch.stack(gt_kp2d)
 
 def get_weak_kp2d():
     return torch.zeros_like(get_gt_kp2d()).clone()
 
 def get_full_kp2d():
-    return get_gt_kp2d().clone()
+    print("full_kp2d",get_gt_kp2d().shape)
+    return get_gt_kp2d().squeeze().clone()
 
 def get_init_kp2d():
     return torch.tensor(labels["kp2d"][0]).clone()
@@ -171,6 +191,9 @@ def get_gt_kp3d():
         vertices.append(gt_output[frame_index].vertices.squeeze(0))
     vertices = torch.stack(vertices, dim=0)
     kp3ds = vertices2joints(J_regressor_wham, vertices)
+    kp3ds_with_confidence = torch.cat((kp3ds, torch.ones_like(kp3ds[..., 0]).unsqueeze(-1)), dim=-1)
+    print("kp3d",kp3ds_with_confidence.shape)
+    return kp3ds_with_confidence.clone()
 
     return kp3ds.clone()
 

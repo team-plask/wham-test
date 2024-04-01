@@ -169,7 +169,7 @@ class TrajectoryDecoder(nn.Module):
             pred_root_list.append(pred_rootr)
             pred_vel_list.append(pred_rootv)
         
-        print("pred_root_list: ", pred_root_list)
+        #print("pred_root_list: ", pred_root_list)
         pred_root = torch.cat(pred_root_list, dim=1).view(b, f + 1, -1)
         pred_vel = torch.cat(pred_vel_list, dim=1).view(b, f, -1)
         
@@ -238,7 +238,6 @@ class TrajectoryRefiner(nn.Module):
         pred_root = output['poses_root_r6d'].clone().detach()
         feet = output['feet'].clone().detach()
         contact = output['contact'].clone().detach()
-        
         feet_vel = torch.cat((torch.zeros_like(feet[:, :1]), feet[:, 1:] - feet[:, :-1]), dim=1) * 30   # Normalize to 30 times
         feet = (feet_vel * contact.unsqueeze(-1)).reshape(b, f, -1)  # Velocity input
         inpt_feat = torch.cat([context, feet], dim=-1)

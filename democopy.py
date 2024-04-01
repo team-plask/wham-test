@@ -26,7 +26,7 @@ except:
 def run(cfg,
         global_path = "dummy/test/",
         image_subdir = "images/", #image directory under vid/ directory
-        redo_tracking = False,
+        redo_tracking = True,
         redo_slam = True,
         calib=None,
         run_global=True,

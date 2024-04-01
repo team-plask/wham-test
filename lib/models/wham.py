@@ -59,8 +59,12 @@ class Network(nn.Module):
     def compute_global_feet(self, root_world, trans):
         # # Compute world-coordinate motion
         cam_R, cam_T = compute_camera_motion(self.output, self.pred_pose[:, :, :6], root_world, trans, self.pred_cam)
+        # cam_R = torch.where(torch.isnan(cam_R), torch.tensor(0.0), cam_R)
+        # cam_T = torch.where(torch.isnan(cam_T), torch.tensor(0.0), cam_T)
         feet_cam = self.output.feet.reshape(self.b, self.f, -1, 3) + self.output.full_cam.reshape(self.b, self.f, 1, 3)
+        # feet_cam = torch.where(torch.isnan(feet_cam), torch.tensor(0.0), feet_cam)
         feet_world = (cam_R.mT @ (feet_cam - cam_T.unsqueeze(-2)).mT).mT
+        # feet_cam = torch.where(torch.isnan(feet_cam), torch.tensor(0.0), feet_cam)
         
         return feet_world, cam_R
     
@@ -71,7 +75,10 @@ class Network(nn.Module):
                                 return_full_pose=not self.training,
                                 **kwargs,
                                 )
-        
+        for key, value in self.output.items():
+            if value == None:
+                print (key, value)
+
         # Feet location in global coordinate
         root_world, trans = rollout_global_motion(self.pred_root, self.pred_vel)
         feet_world, cam_R = self.compute_global_feet(root_world, trans)
@@ -136,6 +143,10 @@ class Network(nn.Module):
     def forward(self, x, inits, img_features=None, mask=None, init_root=None, cam_angvel=None,
                 cam_intrinsics=None, bbox=None, res=None, return_y_up=False, **kwargs):
 
+        if torch.isnan(x).any():
+            print(f"NaN detected at layer: input")
+        if torch.isnan(init_root).any():
+            print(f"NaN detected at layer: init_root")
         x = self.preprocess(x, mask)
         init_kp, init_smpl = inits
         
@@ -165,14 +176,37 @@ class Network(nn.Module):
         self.pred_shape = pred_shape
         self.pred_cam = pred_cam
         self.pred_contact = pred_contact
+        
+        # # Check for NaN values in predictions
+        # if torch.isnan(self.pred_kp3d).any():
+        #     print("NaN detected in pred_kp3d")
+        # if torch.isnan(self.pred_root).any():
+        #     print("NaN detected in pred_root")
+        # if torch.isnan(self.pred_vel).any():
+        #     print("NaN detected in pred_vel")
+        # if torch.isnan(self.pred_pose).any():
+        #     print("NaN detected in pred_pose")
+        # if torch.isnan(self.pred_shape).any():
+        #     print("NaN detected in pred_shape")
+        # if torch.isnan(self.pred_cam).any():
+        #     print("NaN detected in pred_cam")
+        # if torch.isnan(self.pred_contact).any():
+        #     print("NaN detected in pred_contact")
         # --------- #
         
         # --------- Build SMPL --------- #
         output = self.forward_smpl(cam_intrinsics=cam_intrinsics, bbox=bbox, res=res)
+        # for key, value in output.items():
+        #     if value == None:
+        #         print (key, value)
         # --------- #
         
         # --------- Refine trajectory --------- #
         output = self.refine_trajectory(output, cam_angvel, return_y_up)
         # --------- #
+
+        for key, value in output.items():
+            if torch.isnan(value).any():
+                output[key] = torch.where(torch.isnan(value), torch.tensor(0.0).to(value.device), value)
         
         return output
