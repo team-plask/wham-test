@@ -7,4 +7,6 @@ experiments
 dataset
 __pycache__
 train_dataset.pth
+!dummy/visualize
+dummy/visualize/static
 
