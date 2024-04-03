@@ -84,6 +84,7 @@ class EMDBDataset(BaseDataset):
         self.smpl = build_body_model('cpu', self.n_frames)
         self.samples = []
         self.prepare_video_batch()
+        print (len(self))
 
         
         # Naive assumption of image intrinsics
@@ -115,6 +116,8 @@ class EMDBDataset(BaseDataset):
             image_path = os.path.join(target_path, 'images')
             image_files = os.listdir(image_path)
             num_images = len(image_files)
+            if vid == "P1_14_outdoor_climb":
+                num_images = 1000
             # if the whole sequence length of one video is smaller than n_frames, skip
             if num_images < self.n_frames: continue
 
@@ -124,10 +127,10 @@ class EMDBDataset(BaseDataset):
             chunks = view_as_windows(
                 indexes, (self.n_frames), step=(self.n_frames // special_n)
             )
-            start_finish = chunks[r::special_n, (0, -1)].tolist()
+            start_finish = chunks[r::4, (0, -1)].tolist()
             for sf in start_finish:
                 self.samples.append((vid, sf))
-                #print(f"vid: {vid}, start: {sf[0]}, end: {sf[1]}")
+                print(f"vid: {vid}, start: {sf[0]}, end: {sf[1]}")
     
     def __len__(self):
         # 데이터셋의 총 샘플 수
@@ -135,7 +138,7 @@ class EMDBDataset(BaseDataset):
 
     def get_kp2d(self):
         try:
-            return self.tracking_results[0]['keypoints'][self.start:self.end].detach()
+            return self.target['kp2d'][self.start:self.end].detach()
         except KeyError:
             print("KeyError: 'kp2d' key not found in target dictionary.")
             return None
@@ -394,7 +397,7 @@ class EMDBDataset(BaseDataset):
         # kp2d = target['kp2d']
         # bbox = target['bbox'].clone()
         # bbox[:, 2] = bbox[:, 2] / 200
-        # print("kp2d shape", kp2d.shape)
+        #print("kp3d shape", target['kp3d'].shape)
         # print("bbox shape", bbox.shape)
         #target['kp2d'], target['bbox'] = self.keypoints_normalizer(torch.tensor(target['kp2d']).clone(), target['res'], self.cam_intrinsics, 224, 224, torch.tensor(self['bbox']).clone()) 
 
@@ -403,6 +406,18 @@ class EMDBDataset(BaseDataset):
         # bbox = target['bbox'].clone()
         # target['gt_kp2d'], target['bbox'] = self.keypoints_normalizer(kp2d, target['res'], self.cam_intrinsics, 224, 224, bbox)
 
+        # path = "dummy/keypoints3d/static/animations"
+        #     # write a file
+        # folder = f"epoch_index{index}_{self.vid}_gt"
+        # os.makedirs(f"{path}/{folder}", exist_ok=True)
+        # for frame in range(len(target['kp3d'])):
+        #     with open(f"{path}/{folder}/{frame:03}.obj", "w") as file:
+        #         for joint in range(len(target['kp3d'][frame])):
+        #             # CUDA 텐서를 CPU로 옮기고, .item()으로 실제 값을 가져온 후, 문자열로 변환
+        #             a = target['kp3d'][frame][joint][0]
+        #             b = target['kp3d'][frame][joint][1]
+        #             c = target['kp3d'][frame][joint][2] 
+        #             file.write(f"v {a} {b} {c}\n")
 
         vis_thr=0.6
         target['mask'] = torch.zeros((self.n_frames, 17), dtype=torch.bool)
