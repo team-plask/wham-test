@@ -218,9 +218,10 @@ class EMDBDataset(BaseDataset):
         # Retrieve bbox data here
         # bboxes format of embd((x_min, y_min, x_max, y_max)) should be changed to (center_x, center_y, scale/200) with square box
         # scaleFactor = 1.1, scale/200 = height/scaleFactor. Don't ask why!TODO
-        bbox =self.target['bbox'][self.start:self.end].detach()
+        #bbox =self.target['bbox'][self.start:self.end].detach()
+        bbox = self.tracking_results[0]['bbox'][self.start:self.end]
 
-        return bbox
+        return torch.tensor(bbox)
 
     def get_gt_kp3d(self):
         # Retrieve kp3d data here

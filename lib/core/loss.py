@@ -254,7 +254,6 @@ def root_loss(
     mask_v = (gt_vel_root != 0.0).all(dim=-1).all(dim=-1)
     mask_s = (stationary != -1).any(dim=1).any(dim=1)
     mask_v = mask_v * mask_s
-    print("-----------------")
     
     if mask_r.any():
         loss_r = criterion(pred_pose_root, gt_pose_root)[mask_r].mean()

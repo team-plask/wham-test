@@ -48,7 +48,6 @@ class SMPL(_SMPL):
                 res=None,
                 return_full_pose=False,
                 **kwargs):
-        
         rotmat = transforms.rotation_6d_to_matrix(pred_rot6d.reshape(*pred_rot6d.shape[:2], -1, 6)
         ).reshape(-1, 24, 3, 3)
 
@@ -72,7 +71,15 @@ class SMPL(_SMPL):
                 camera_center=torch.zeros(*cam.shape[:2], 2, device=cam.device)
             )
             output.weak_joints2d = weak_joints2d
-            
+
+            if torch.isnan(cam).any():
+                print("cam has nan")
+            if torch.isnan(bbox).any():
+                print("bbox has nan")
+            if torch.isnan(res).any():
+                print("res has nan")
+            if torch.isnan(cam_intrinsics).any():
+                print("cam_intrinsics has nan")
             # Full perspective projection
             full_cam = convert_pare_to_full_img_cam(
                 cam, 

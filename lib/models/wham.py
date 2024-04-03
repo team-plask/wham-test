@@ -62,6 +62,13 @@ class Network(nn.Module):
         cam_R, cam_T = compute_camera_motion(self.output, self.pred_pose[:, :, :6], root_world, trans, self.pred_cam)
         # cam_R = torch.where(torch.isnan(cam_R), torch.tensor(0.0), cam_R)
         # cam_T = torch.where(torch.isnan(cam_T), torch.tensor(0.0), cam_T)
+
+        if cam_R is None or torch.isnan(cam_R).any():
+            print ("cam_R is None or has NaN values")
+        if cam_T is None or torch.isnan(cam_T).any():
+            print ("cam_T is None or has NaN values")
+
+
         feet_cam = self.output.feet.reshape(self.b, self.f, -1, 3) + self.output.full_cam.reshape(self.b, self.f, 1, 3)
         # feet_cam = torch.where(torch.isnan(feet_cam), torch.tensor(0.0), feet_cam)
         feet_world = (cam_R.mT @ (feet_cam - cam_T.unsqueeze(-2)).mT).mT
@@ -80,7 +87,13 @@ class Network(nn.Module):
             if value == None:
                 print (key, value)
             elif torch.isnan(value).any():
-                print (key + " has NaN values")
+                print (key + "has NaN values")
+        print("variables---")
+        for attr, value in vars(self.output).items():
+            if value == None:
+                print (attr, value)
+            elif torch.isnan(value).any():
+                print (attr + "has NaN values")
 
         # Feet location in global coordinate
         root_world, trans = rollout_global_motion(self.pred_root, self.pred_vel)
@@ -205,9 +218,9 @@ class Network(nn.Module):
         # --------- Build SMPL --------- #
         output = self.forward_smpl(cam_intrinsics=cam_intrinsics, bbox=bbox, res=res)
 
-        for key, value in output.items():
-            if value == None or torch.isnan(value).any():
-                print (key + " is None or has NaN values")
+        # for key, value in output.items():
+        #     if value == None or torch.isnan(value).any():
+        #         print (key + " is None or has NaN values")
         #--------- #
         
         # --------- Refine trajectory --------- #
