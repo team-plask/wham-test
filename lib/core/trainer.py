@@ -21,7 +21,7 @@ import logging
 import numpy as np
 import os.path as osp
 from progress.bar import Bar
-
+import os
 from configs import constants as _C
 from lib.utils import transforms
 from lib.utils.utils import AverageMeter, prepare_batch
@@ -124,6 +124,50 @@ class Trainer():
             timer['forward'] = time.time() - start
             start = time.time()
             # =======>
+            
+            # <======= pred, gt kp3d save
+            path = "dummy/keypoints3d/static/animations"
+
+            #pred
+            label = "verts_cam"
+            print("kp2d pred shape", pred[label].shape)
+            #gt['kp3d'].shape[0] = batch size
+            #gt['kp3d'].shape[1] = sequence length
+            #gt['kp3d'].shape[2] = keypoint(joint) num
+            #pred['verts_cam'].shape[1] = smpl vertices num
+            pred_verts = pred[label].view(gt['kp3d'].shape[0], gt['kp3d'].shape[1], pred[label].shape[-2], pred[label].shape[-1])
+            #pred_verts = pred[label]
+            # write a file
+            #pred_verts.shape = [16, 80, 31, 2]
+            
+            # for item in range(len(pred_verts)):
+            #     folder = f"epoch{self.epoch}_batch{i}_item{item}_pred_{label}"
+            #     os.makedirs(f"{path}/{folder}", exist_ok=True)
+            #     for frame in range(len(pred_verts[item])):
+            #         with open(f"{path}/{folder}/{frame:03}.obj", "w") as file:
+            #             for vertex in range(len(pred_verts[item][frame])):
+            #                 a = pred_verts[item][frame][vertex][0]
+            #                 b = pred_verts[item][frame][vertex][1]
+            #                 c = pred_verts[item][frame][vertex][2] 
+            #                 #c = 0
+            #                 file.write(f"v {a} {b} {c}\n")
+
+            # # gt
+            # print("kp2d gt shape", gt[label].shape)
+            # # write a file
+            # for item in range(len(gt[label])):
+            #     folder = f"epoch{self.epoch}_batch{i}_item{item}_gt_{label}"
+            #     os.makedirs(f"{path}/{folder}", exist_ok=True)
+            #     for frame in range(len(gt[label][item])):
+            #         with open(f"{path}/{folder}/{frame:03}.obj", "w") as file:
+            #             for joint in range(len(gt[label][item][frame])):
+            #                 # CUDA 텐서를 CPU로 옮기고, .item()으로 실제 값을 가져온 후, 문자열로 변환
+            #                 a = gt[label][item][frame][joint][0]/1000
+            #                 b = gt[label][item][frame][joint][1]/1000
+            #                 #c = gt[label][item][frame][joint][2] 
+            #                 c = 0
+            #                 file.write(f"v {a} {b} {c}\n")
+
 
             # <======= Backprop            
             loss, loss_dict = self.criterion(pred, gt)
@@ -150,8 +194,8 @@ class Trainer():
             # summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
             #                 f'| loss: {losses.avg:.2f} | 2d: {kp_2d_loss.avg:.2f} ' \
             #                 f'| 3d: {kp_3d_loss.avg:.2f} '
-            # summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
-            #                 f'| loss: {losses.avg:.2f} | 3d: {kp_3d_loss.avg:.2f} '
+            summary_string = f'({i + 1}/{len(self.train_loader)}) | Total: {bar.elapsed_td} ' \
+                            f'| loss: {losses.avg:.2f} | 3d: {kp_3d_loss.avg:.2f} '
 
             for k, v in loss_dict.items():
                 if k in self.summary_loss_keys: 

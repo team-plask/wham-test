@@ -6,6 +6,7 @@ import torch
 from torch import nn
 
 from configs import constants as _C
+import joblib
 from lib.models.layers import (MotionEncoder, MotionDecoder, TrajectoryDecoder, TrajectoryRefiner, Integrator, 
                                rollout_global_motion, reset_root_velocity, compute_camera_motion)
 
@@ -78,10 +79,21 @@ class Network(nn.Module):
         for key, value in self.output.items():
             if value == None:
                 print (key, value)
+            elif torch.isnan(value).any():
+                print (key + " has NaN values")
 
         # Feet location in global coordinate
         root_world, trans = rollout_global_motion(self.pred_root, self.pred_vel)
         feet_world, cam_R = self.compute_global_feet(root_world, trans)
+
+        if root_world is None or torch.isnan(root_world).any():
+            print ("11root_world is None or has NaN values")
+        if feet_world is None or torch.isnan(feet_world).any():
+            print ("11feet_world is None or has NaN values")
+        if cam_R is None or torch.isnan(cam_R).any():
+            print ("11cam_R is None or has NaN values")
+        if trans is None or torch.isnan(trans).any():
+            print ("11trans is None or has NaN values")
         
         # Return output
         output = {'feet': feet_world,
@@ -143,10 +155,6 @@ class Network(nn.Module):
     def forward(self, x, inits, img_features=None, mask=None, init_root=None, cam_angvel=None,
                 cam_intrinsics=None, bbox=None, res=None, return_y_up=False, **kwargs):
 
-        if torch.isnan(x).any():
-            print(f"NaN detected at layer: input")
-        if torch.isnan(init_root).any():
-            print(f"NaN detected at layer: init_root")
         x = self.preprocess(x, mask)
         init_kp, init_smpl = inits
         
@@ -177,36 +185,37 @@ class Network(nn.Module):
         self.pred_cam = pred_cam
         self.pred_contact = pred_contact
         
-        # # Check for NaN values in predictions
-        # if torch.isnan(self.pred_kp3d).any():
-        #     print("NaN detected in pred_kp3d")
-        # if torch.isnan(self.pred_root).any():
-        #     print("NaN detected in pred_root")
-        # if torch.isnan(self.pred_vel).any():
-        #     print("NaN detected in pred_vel")
-        # if torch.isnan(self.pred_pose).any():
-        #     print("NaN detected in pred_pose")
-        # if torch.isnan(self.pred_shape).any():
-        #     print("NaN detected in pred_shape")
-        # if torch.isnan(self.pred_cam).any():
-        #     print("NaN detected in pred_cam")
-        # if torch.isnan(self.pred_contact).any():
-        #     print("NaN detected in pred_contact")
+        # Check for NaN values in predictions
+        if torch.isnan(self.pred_kp3d).any():
+            print("NaN detected in pred_kp3d")
+        if torch.isnan(self.pred_root).any():
+            print("NaN detected in pred_root")
+        if torch.isnan(self.pred_vel).any():
+            print("NaN detected in pred_vel")
+        if torch.isnan(self.pred_pose).any():
+            print("NaN detected in pred_pose")
+        if torch.isnan(self.pred_shape).any():
+            print("NaN detected in pred_shape")
+        if torch.isnan(self.pred_cam).any():
+            print("NaN detected in pred_cam")
+        if torch.isnan(self.pred_contact).any():
+            print("NaN detected in pred_contact")
         # --------- #
         
         # --------- Build SMPL --------- #
         output = self.forward_smpl(cam_intrinsics=cam_intrinsics, bbox=bbox, res=res)
-        # for key, value in output.items():
-        #     if value == None:
-        #         print (key, value)
-        # --------- #
+
+        for key, value in output.items():
+            if value == None or torch.isnan(value).any():
+                print (key + " is None or has NaN values")
+        #--------- #
         
         # --------- Refine trajectory --------- #
         output = self.refine_trajectory(output, cam_angvel, return_y_up)
         # --------- #
 
-        for key, value in output.items():
-            if torch.isnan(value).any():
-                output[key] = torch.where(torch.isnan(value), torch.tensor(0.0).to(value.device), value)
+        # for key, value in output.items():
+        #     if torch.isnan(value).any():
+        #         output[key] = torch.where(torch.isnan(value), torch.tensor(0.0).to(value.device), value)
         
         return output

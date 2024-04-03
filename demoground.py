@@ -41,11 +41,11 @@ J_regressor_feet= None#torch.tensor(joblib.load('J_regressor_feet.npy')).to('cud
 smpl = smplx.create(model_path="dataset/body_models/", model_type='smpl')
 keypoints_normalizer = None
 
-
+vid_name = None
 
 def run(cfg, _global_path="dummy/test/", _image_subdir="images/"):
     #initialize
-    global labels, tracking_results, slam_results, fps, scaleFactor, J_regressor_eval, J_regressor_wham,J_regressor_feet, smpl_batch_size, smpl, global_path, image_subdir, folder_path, n_frames, keypoints_normalizer
+    global labels, tracking_results, slam_results, fps, scaleFactor, J_regressor_eval, J_regressor_wham,J_regressor_feet, smpl_batch_size, smpl, global_path, image_subdir, folder_path, n_frames, keypoints_normalizer, vid_name
     #smpl_batch_size = cfg.TRAIN.BATCH_SIZE * cfg.DATASET.SEQLEN
     #smpl = build_body_model(cfg.DEVICE, smpl_batch_size)
 
@@ -57,7 +57,8 @@ def run(cfg, _global_path="dummy/test/", _image_subdir="images/"):
     J_regressor_feet = torch.from_numpy(np.load('dataset/body_models/J_regressor_feet.npy')).float()
     keypoints_normalizer = Normalizer(cfg)
     bar = Bar('Processing', max=len(os.listdir(global_path)))
-    for vid in os.listdir(global_path):
+    for vid in sorted(os.listdir(global_path)):
+        vid_name = vid
         #initialize about vid
         labels = joblib.load(f'{global_path}{vid}/{vid}_data.pkl')
         folder_path = f'{global_path}{vid}'
@@ -82,7 +83,7 @@ def compute_contact_label(feet, thr=1e-2, alpha=5):
     label = 1 / (1 + torch.exp(alpha * (thr ** -1) * (vel - thr)))
     return label.clone()
 
-def perspective_projection(kp3d, K, R, T):
+def perspective_projection2(kp3d, K, R, T):
     """
     3D 점들을 2D 이미지 평면으로 투영합니다.
 
@@ -118,6 +119,16 @@ def perspective_projection(kp3d, K, R, T):
     
     return kp2d.squeeze()
 
+def perspective_projection(points, cam_intrinsics, rotation=None, translation=None):
+    K = cam_intrinsics
+    K = K.repeat(points.shape[0], 1, 1)
+    if rotation is not None:
+        points = torch.matmul(rotation, points.transpose(1, 2)).transpose(1, 2)
+    if translation is not None:
+        points = points + translation.unsqueeze(1)
+    projected_points = points / points[:, :, -1].unsqueeze(-1)
+    projected_points = torch.einsum('bij,bkj->bki', K.float(), projected_points.float())
+    return projected_points[:, :, :-1]
 
 def get_kp2d():
     #print(self.tracking_results[0]['keypoints'])
@@ -137,11 +148,12 @@ def get_gt_kp2d():
     R = get_R()
     T = torch.tensor(labels['camera']["extrinsics"][:, :3, 3]).clone()
     gt_kp2d = []
-    for frame_index in range(n_frames):
-        x2d = perspective_projection(kp3ds[frame_index].squeeze(), cam_intrinsic, R[frame_index], T[frame_index])
-        gt_kp2d.append(x2d)
+    gt_kp2d = perspective_projection(kp3ds.squeeze(), cam_intrinsic)
+    # for frame_index in range(n_frames):
+    #     x2d = perspective_projection(kp3ds[frame_index].squeeze(), cam_intrinsic)#, R[frame_index], T[frame_index])
+    #     gt_kp2d.append(x2d)
 
-    return torch.stack(gt_kp2d)
+    return gt_kp2d.detach().clone()
 
 def get_weak_kp2d():
     return torch.zeros_like(get_gt_kp2d()).clone()
@@ -272,7 +284,18 @@ def get_gt_smpl():
             body_pose=body_pose,
             global_orient=global_orient,
             betas=betas)
-        
+        path = "dummy/keypoints3d/static/animations"
+            # write a file
+        folder = f"smpl_{vid_name}_gt"
+        os.makedirs(f"{path}/{folder}", exist_ok=True)
+        with open(f"{path}/{folder}/{frame_index:03}.obj", "w") as file:
+            for vertex in range(0, len(gt_output.vertices[0]), 50):
+                # CUDA 텐서를 CPU로 옮기고, .item()으로 실제 값을 가져온 후, 문자열로 변환
+                a = gt_output.vertices[0][vertex][0]
+                b = gt_output.vertices[0][vertex][1]
+                c = gt_output.vertices[0][vertex][2] 
+                file.write(f"v {a} {b} {c}\n")
+
         smpl_outputs.append(gt_output)
     return smpl_outputs
     
