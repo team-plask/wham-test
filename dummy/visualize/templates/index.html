@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plotly 3D Animations</title>
+</head>
+<body>
+    <h1>Select a 3D Animation</h1>
+    <ul>
+        {% for file in files %}
+            <li><a href="/animations/{{ file }}">{{ file }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
