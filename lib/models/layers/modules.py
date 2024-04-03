@@ -233,14 +233,14 @@ class TrajectoryRefiner(nn.Module):
 
     def forward(self, context, pred_vel, output, cam_angvel, return_y_up):
         b, f = context.shape[:2]
-
+        
         # Register values
         pred_root = output['poses_root_r6d'].clone().detach()
         feet = output['feet'].clone().detach()
         contact = output['contact'].clone().detach()
         feet_vel = torch.cat((torch.zeros_like(feet[:, :1]), feet[:, 1:] - feet[:, :-1]), dim=1) * 30   # Normalize to 30 times
         feet = (feet_vel * contact.unsqueeze(-1)).reshape(b, f, -1)  # Velocity input
-        inpt_feat = torch.cat([context, feet], dim=-1)     
+        inpt_feat = torch.cat([context, feet], dim=-1)
         
         (delta_root, delta_vel), _, _ = self.refiner(inpt_feat, [pred_root[:, 1:], pred_vel], h0=None)
         pred_root[:, 1:] = pred_root[:, 1:] + delta_root

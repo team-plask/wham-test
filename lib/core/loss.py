@@ -192,9 +192,7 @@ class WHAMLoss(nn.Module):
             pred['feet_refined'],
             gt_contact,
         )
-        #print("kp2d loss check", loss_keypoints_full, loss_keypoints_weak)
-        if torch.isnan(loss_keypoints_full).any():
-            loss_keypoints_full = torch.FloatTensor(1).fill_(0.).to(gt_full_kp2d.device)[0]
+                
         loss_keypoints = loss_keypoints_full + loss_keypoints_weak
         loss_keypoints *= self.keypoint_2d_loss_weight
         loss_keypoints_3d_smpl *= self.keypoint_3d_loss_weight
@@ -205,8 +203,6 @@ class WHAMLoss(nn.Module):
         loss_root_ref = loss_vel_root_ref * self.root_vel_loss_weight + loss_pose_root_ref * self.root_pose_loss_weight
 
         loss_regr_pose *= self.pose_loss_weight
-        # print("pose loss weight", loss_regr_pose)
-        # print("loss weight updat", self.loss_weight)
         loss_regr_betas *= self.shape_loss_weight
         
         loss_sliding *= self.sliding_loss_weight
@@ -242,19 +238,11 @@ def root_loss(
     stationary,
     criterion
 ):
-    if torch.isnan(pred_vel_root).any():
-        print("pred_vel_root", pred_vel_root)
-    if torch.isnan(pred_pose_root).any():
-        print("pred_pose_root", pred_pose_root)
-    if torch.isnan(gt_vel_root).any():
-        print("gt_vel_root", gt_vel_root)
-    if torch.isnan(gt_pose_root).any():
-        print("gt_pose_root", gt_pose_root)
+
     mask_r = (gt_pose_root != 0.0).all(dim=-1).all(dim=-1)
     mask_v = (gt_vel_root != 0.0).all(dim=-1).all(dim=-1)
     mask_s = (stationary != -1).any(dim=1).any(dim=1)
     mask_v = mask_v * mask_s
-    print("-----------------")
     
     if mask_r.any():
         loss_r = criterion(pred_pose_root, gt_pose_root)[mask_r].mean()
@@ -302,7 +290,7 @@ def full_projected_keypoint_loss(
     
     scale = bbox[..., 2:] * 200.
     conf = gt_keypoints_2d[..., -1]
-
+    
     if (conf > 0).any():
         #print("pred_keypoints_2d", pred_keypoints_2d, gt_keypoints_2d)
         loss = torch.mean(
@@ -360,12 +348,11 @@ def smpl_losses(
         mask,
         criterion,
 ):
-    #print("pred_pose", pred_pose, "gt_pose", gt_pose, "mask", mask)
+    
     if mask.any().item():
         loss_regr_pose = torch.mean(
             weight * torch.square(pred_pose - gt_pose)[mask].mean(-1)
         ) * mask.float().mean()
-        print("loss_regr_pose", loss_regr_pose)
         loss_regr_betas = F.mse_loss(pred_betas, gt_betas, reduction='none')[mask].mean() * mask.float().mean()
     else:
         loss_regr_pose = torch.FloatTensor(1).fill_(0.).to(gt_pose.device)[0]

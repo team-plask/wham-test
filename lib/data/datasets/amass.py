@@ -156,6 +156,7 @@ class AMASSDataset(BaseDataset):
         
         target = d_utils.prepare_keypoints_data(target)
         target = d_utils.prepare_smpl_data(target)
+
         return target
     
 
