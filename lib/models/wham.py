@@ -138,7 +138,9 @@ class Network(nn.Module):
     
     def preprocess(self, x, mask):
         self.b, self.f = x.shape[:2]
-        return x
+        #self.b = batch size, self.f = frame(sequence) size
+        print("x.shape", x.shape)
+        print("mask.shape", mask.shape)
         # Treat masked keypoints
         mask_embedding = mask.unsqueeze(-1) * self.mask_embedding
         _mask = mask.unsqueeze(-1).repeat(1, 1, 1, 2).reshape(self.b, self.f, -1)

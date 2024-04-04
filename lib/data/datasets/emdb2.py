@@ -84,7 +84,6 @@ class EMDBDataset(BaseDataset):
         self.smpl = build_body_model('cpu', self.n_frames)
         self.samples = []
         self.prepare_video_batch()
-        print (len(self))
 
         
         # Naive assumption of image intrinsics
@@ -130,7 +129,7 @@ class EMDBDataset(BaseDataset):
             start_finish = chunks[r::4, (0, -1)].tolist()
             for sf in start_finish:
                 self.samples.append((vid, sf))
-                print(f"vid: {vid}, start: {sf[0]}, end: {sf[1]}")
+                #print(f"vid: {vid}, start: {sf[0]}, end: {sf[1]}")
     
     def __len__(self):
         # 데이터셋의 총 샘플 수
@@ -312,6 +311,14 @@ class EMDBDataset(BaseDataset):
         #[1,3,3]
         return torch.tensor(self.ori['camera']['intrinsics']).detach().unsqueeze(0)
         pass
+
+    def get_mask(self, vis_thr=0.6):
+        # Retrieve mask data here
+
+        temp= self.tracking_results[0]["keypoints"][self.start:self.end][..., -1] < vis_thr
+        return torch.tensor(temp)
+        return torch.ones((self.n_frames, 17), dtype=torch.bool)
+        pass
     
 
     def get_single_sequence(self, index):
@@ -391,7 +398,8 @@ class EMDBDataset(BaseDataset):
             'cam_intrinsics': self.get_cam_intrinsics().clone(),
             'has_smpl': torch.tensor(True),
             'has_full_screen': torch.tensor(True),
-            'has_verts': torch.tensor(False)
+            'has_verts': torch.tensor(False),
+            'mask' : self.get_mask().clone()
             #'vid' : torch.tensor(vid)
         }
         # # 2D keypoints detection
@@ -419,9 +427,6 @@ class EMDBDataset(BaseDataset):
         #             b = target['kp3d'][frame][joint][1]
         #             c = target['kp3d'][frame][joint][2] 
         #             file.write(f"v {a} {b} {c}\n")
-
-        vis_thr=0.6
-        target['mask'] = torch.zeros((self.n_frames, 17), dtype=torch.bool)
 
         # for key, value in target.items():
         #     print(f"{key}: {value.shape}")
